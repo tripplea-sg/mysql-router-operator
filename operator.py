@@ -61,6 +61,10 @@ def router_settings(
     return router_name, secret_name, image, cluster_name, replicas, node_prefix
 
 
+def target_namespace(cr_namespace: str, spec: Dict[str, Any]) -> str:
+    return spec.get("targetNamespace") or cr_namespace
+
+
 def desired_nodes(
     namespace: str,
     owner_name: str,
@@ -189,6 +193,17 @@ def apply_external_nodes(namespace: str, owner_name: str, nodes: List[Dict[str, 
         apply_external_node_service(namespace, node)
         apply_external_node_endpoints(namespace, node)
     prune_stale_external_nodes(namespace, owner_name, [node["name"] for node in nodes])
+
+
+def ensure_namespace_exists(namespace: str) -> None:
+    try:
+        corev1().read_namespace(namespace)
+    except ApiException as exc:
+        if exc.status == 404:
+            raise kopf.TemporaryError(
+                f"Target namespace {namespace!r} does not exist yet.", delay=30
+            )
+        raise
 
 
 def read_secret_value(secret: client.V1Secret, key: str, default: str = "") -> str:
@@ -471,19 +486,28 @@ def reconcile(
     logger: Any,
     reason: str = "custom resource",
 ) -> None:
+    router_namespace = target_namespace(namespace, spec)
     router_name, secret_name, image, cluster_name, replicas, node_prefix = router_settings(
-        namespace, name, spec
+        router_namespace, name, spec
     )
-    nodes = desired_nodes(namespace, name, spec, cluster_name, node_prefix)
+    nodes = desired_nodes(router_namespace, name, spec, cluster_name, node_prefix)
     if not nodes:
         raise kopf.PermanentError("spec.innodbCluster.nodes must contain at least one node")
 
-    apply_external_nodes(namespace, name, nodes)
-    patch_secret_bootstrap_host(namespace, secret_name, nodes)
-    apply_configmap(namespace, router_name, name, nodes)
-    apply_router_service(namespace, router_name, name)
-    apply_deployment(namespace, router_name, name, secret_name, image, replicas, nodes)
-    logger.info("Reconciled %s with %d external InnoDB nodes.", reason, len(nodes))
+    ensure_namespace_exists(router_namespace)
+    apply_external_nodes(router_namespace, name, nodes)
+    patch_secret_bootstrap_host(router_namespace, secret_name, nodes)
+    apply_configmap(router_namespace, router_name, name, nodes)
+    apply_router_service(router_namespace, router_name, name)
+    apply_deployment(
+        router_namespace, router_name, name, secret_name, image, replicas, nodes
+    )
+    logger.info(
+        "Reconciled %s into namespace %s with %d external InnoDB nodes.",
+        reason,
+        router_namespace,
+        len(nodes),
+    )
 
 
 @kopf.on.startup()
@@ -492,9 +516,9 @@ def configure(settings: kopf.OperatorSettings, **_: Any) -> None:
     settings.posting.level = 20
 
 
-@kopf.on.resume("mysql.oracle.com", "v1alpha1", "mysqlrouters")
-@kopf.on.create("mysql.oracle.com", "v1alpha1", "mysqlrouters")
-@kopf.on.update("mysql.oracle.com", "v1alpha1", "mysqlrouters")
+@kopf.on.resume("mysql.oracle.com", "v1alpha1", "mysqlrouters", namespace=NAMESPACE)
+@kopf.on.create("mysql.oracle.com", "v1alpha1", "mysqlrouters", namespace=NAMESPACE)
+@kopf.on.update("mysql.oracle.com", "v1alpha1", "mysqlrouters", namespace=NAMESPACE)
 def mysql_router_changed(
     namespace: str,
     name: str,
@@ -505,7 +529,7 @@ def mysql_router_changed(
     reconcile(namespace, name, spec, logger)
 
 
-@kopf.on.delete("mysql.oracle.com", "v1alpha1", "mysqlrouters")
+@kopf.on.delete("mysql.oracle.com", "v1alpha1", "mysqlrouters", namespace=NAMESPACE)
 def mysql_router_deleted(
     namespace: str,
     name: str,
@@ -513,11 +537,18 @@ def mysql_router_deleted(
     logger: Any,
     **_: Any,
 ) -> None:
-    cleanup_owned_resources(namespace, name, spec)
+    cleanup_owned_resources(target_namespace(namespace, spec), name, spec)
     logger.info("Removed resources owned by MySQLRouter/%s.", name)
 
 
-@kopf.timer("mysql.oracle.com", "v1alpha1", "mysqlrouters", interval=300.0, sharp=True)
+@kopf.timer(
+    "mysql.oracle.com",
+    "v1alpha1",
+    "mysqlrouters",
+    namespace=NAMESPACE,
+    interval=300.0,
+    sharp=True,
+)
 def periodic_reconcile(
     namespace: str,
     name: str,
