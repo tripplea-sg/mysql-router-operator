@@ -75,9 +75,12 @@ The operator image is pulled from the public GHCR repository:
 ghcr.io/tripplea-sg/mysql-router-operator:0.1.0
 ```
 
-OKE can pull this public image without `imagePullSecrets`.
+OKE/Kubernetes can pull this public image without imagePullSecrets.
 
-Kubernetes manifests are available in the GitHub `deploy` directory:
+The image must include linux/amd64 because most OKE worker nodes are AMD64.
+The GitHub Actions workflow builds both linux/amd64 and linux/arm64.
+
+Kubernetes manifests are available in the GitHub deploy directory:
 
 - [namespace.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/namespace.yaml)
 - [mysqlrouter-crd.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/mysqlrouter-crd.yaml)
