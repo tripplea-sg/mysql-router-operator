@@ -1,3 +1,6 @@
+# Author: Hananto Wicaksono
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: mysql-router
@@ -9,12 +12,3 @@ resources:
   - operator-rbac.yaml
   - operator-deployment.yaml
   - mysqlrouter.yaml
-
-configMapGenerator:
-  - name: mysql-router-operator-code
-    files:
-      - operator.py
-      - requirements.txt
-
-generatorOptions:
-  disableNameSuffixHash: true

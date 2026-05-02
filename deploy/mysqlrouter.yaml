@@ -1,3 +1,6 @@
+# Author: Hananto Wicaksono
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 apiVersion: mysql.oracle.com/v1alpha1
 kind: MySQLRouter
 metadata:
