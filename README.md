@@ -1,5 +1,9 @@
 # MySQL Router Operator
 
+Author: Hananto Wicaksono
+
+License: GNU General Public License v3.0 or later
+
 This workspace contains a small Kopf operator that deploys MySQL Router inside
 Kubernetes for an InnoDB Cluster running outside Kubernetes.
 
@@ -44,36 +48,35 @@ When at least one node endpoint is available, the operator reconciles:
   - uses `emptyDir` for `/router`, so there is no PVC/PV.
   - mounts the ConfigMap for startup logic and discovered inventory.
 
-## 1. Get the Operator Image
+## 1. Install the Operator
 
-For local development, the included `operator-deployment.yaml` can run directly
-from `python:3.12-slim`. It mounts `operator.py` and `requirements.txt` from a
-generated ConfigMap, installs dependencies, and starts Kopf.
+The operator image is pulled from the public GHCR repository:
 
-For production, build and push a dedicated operator image:
-
-```sh
-docker build -t <registry>/mysql-router-operator:latest .
-docker push <registry>/mysql-router-operator:latest
+```text
+ghcr.io/tripplea-sg/mysql-router-operator:0.1.0
 ```
 
-Then update `operator-deployment.yaml`:
+OKE can pull this public image without `imagePullSecrets`.
 
-```yaml
-containers:
-  - name: operator
-    image: <registry>/mysql-router-operator:latest
-```
+Kubernetes manifests are available in the GitHub `deploy` directory:
 
-When using the production image, you can also remove the development command and
-ConfigMap code mount because the image already contains the operator code.
+- [namespace.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/namespace.yaml)
+- [mysqlrouter-crd.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/mysqlrouter-crd.yaml)
+- [operator-rbac.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/operator-rbac.yaml)
+- [operator-deployment.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/operator-deployment.yaml)
+- [secret.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/secret.yaml)
+- [mysqlrouter.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/mysqlrouter.yaml)
 
-## 2. Install the Operator
-
-For a complete sample installation, apply the Kustomize bundle:
+For a complete sample installation from GitHub:
 
 ```sh
-kubectl apply -k .
+kubectl apply -k https://github.com/tripplea-sg/mysql-router-operator//deploy?ref=main
+```
+
+If you cloned the repository locally, run:
+
+```sh
+kubectl apply -k deploy
 ```
 
 Check that the operator is running:
@@ -85,29 +88,28 @@ kubectl logs -n mysql-router deploy/mysql-router-operator
 
 The Kustomize deployment includes:
 
-- `namespace.yaml`
-- `mysqlrouter-crd.yaml`
-- `operator-rbac.yaml`
-- `operator-deployment.yaml`
-- generated `ConfigMap/mysql-router-operator-code`
-- `secret.yaml`
-- `mysqlrouter.yaml`
+- [deploy/namespace.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/namespace.yaml)
+- [deploy/mysqlrouter-crd.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/mysqlrouter-crd.yaml)
+- [deploy/operator-rbac.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/operator-rbac.yaml)
+- [deploy/operator-deployment.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/operator-deployment.yaml)
+- [deploy/secret.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/secret.yaml)
+- [deploy/mysqlrouter.yaml](https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/mysqlrouter.yaml)
 
 For a production-style rollout, you can apply the pieces in phases:
 
 ```sh
-kubectl apply -f namespace.yaml
-kubectl apply -f mysqlrouter-crd.yaml
-kubectl apply -f operator-rbac.yaml
-kubectl apply -f operator-deployment.yaml
+kubectl apply -f deploy/namespace.yaml
+kubectl apply -f deploy/mysqlrouter-crd.yaml
+kubectl apply -f deploy/operator-rbac.yaml
+kubectl apply -f deploy/operator-deployment.yaml
 ```
 
 Then create the secret and `MySQLRouter` resource as described below.
 
-## 3. Create the Bootstrap Secret
+## 2. Create the Bootstrap Secret
 
 MySQL Router needs a MySQL account that can bootstrap against the external
-InnoDB Cluster. The included `secret.yaml` creates:
+InnoDB Cluster. The included `deploy/secret.yaml` creates:
 
 ```yaml
 apiVersion: v1
@@ -126,8 +128,8 @@ stringData:
 You can create it from YAML:
 
 ```sh
-kubectl apply -f namespace.yaml
-kubectl apply -f secret.yaml
+kubectl apply -f deploy/namespace.yaml
+kubectl apply -f deploy/secret.yaml
 ```
 
 Or imperatively:
@@ -145,9 +147,9 @@ The operator updates `MYSQL_BOOTSTRAP_HOST` and `MYSQL_BOOTSTRAP_PORT` to the
 first generated external-node service FQDN, so the initial host can be a
 placeholder.
 
-## 4. Deploy MySQL Router
+## 3. Deploy MySQL Router
 
-Define the external InnoDB Cluster nodes in `mysqlrouter.yaml`:
+Define the external InnoDB Cluster nodes in `deploy/mysqlrouter.yaml`:
 
 ```yaml
 apiVersion: mysql.oracle.com/v1alpha1
@@ -175,8 +177,8 @@ spec:
 Apply it:
 
 ```sh
-kubectl apply -f namespace.yaml
-kubectl apply -f mysqlrouter.yaml
+kubectl apply -f deploy/namespace.yaml
+kubectl apply -f deploy/mysqlrouter.yaml
 ```
 
 The operator creates:
@@ -193,9 +195,9 @@ kubectl get mysqlrouter -n mysql-router
 kubectl get svc,endpoints,deploy,pods -n mysql-router
 ```
 
-## 5. Adapt to InnoDB Cluster Scaling
+## 4. Adapt to InnoDB Cluster Scaling
 
-To change the external InnoDB Cluster nodes, edit `mysqlrouter.yaml` and apply
+To change the external InnoDB Cluster nodes, edit `deploy/mysqlrouter.yaml` and apply
 again. For example, when scaling from 3 external nodes to 5:
 
 ```yaml
@@ -217,7 +219,7 @@ spec:
 Then apply:
 
 ```sh
-kubectl apply -f mysqlrouter.yaml
+kubectl apply -f deploy/mysqlrouter.yaml
 ```
 
 On reconcile, the operator:

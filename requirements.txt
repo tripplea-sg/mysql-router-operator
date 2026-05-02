@@ -1,2 +1,5 @@
+# Author: Hananto Wicaksono
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 kopf==1.37.4
 kubernetes==29.0.0

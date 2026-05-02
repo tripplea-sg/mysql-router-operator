@@ -1,3 +1,9 @@
+"""MySQL Router operator for external InnoDB Cluster endpoints.
+
+Author: Hananto Wicaksono
+SPDX-License-Identifier: GPL-3.0-or-later
+"""
+
 import base64
 import hashlib
 import json
