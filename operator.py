@@ -61,10 +61,6 @@ def router_settings(
     return router_name, secret_name, image, cluster_name, replicas, node_prefix
 
 
-def target_namespace(cr_namespace: str, spec: Dict[str, Any]) -> str:
-    return spec.get("targetNamespace") or cr_namespace
-
-
 def desired_nodes(
     namespace: str,
     owner_name: str,
@@ -486,26 +482,23 @@ def reconcile(
     logger: Any,
     reason: str = "custom resource",
 ) -> None:
-    router_namespace = target_namespace(namespace, spec)
     router_name, secret_name, image, cluster_name, replicas, node_prefix = router_settings(
-        router_namespace, name, spec
+        namespace, name, spec
     )
-    nodes = desired_nodes(router_namespace, name, spec, cluster_name, node_prefix)
+    nodes = desired_nodes(namespace, name, spec, cluster_name, node_prefix)
     if not nodes:
         raise kopf.PermanentError("spec.innodbCluster.nodes must contain at least one node")
 
-    ensure_namespace_exists(router_namespace)
-    apply_external_nodes(router_namespace, name, nodes)
-    patch_secret_bootstrap_host(router_namespace, secret_name, nodes)
-    apply_configmap(router_namespace, router_name, name, nodes)
-    apply_router_service(router_namespace, router_name, name)
-    apply_deployment(
-        router_namespace, router_name, name, secret_name, image, replicas, nodes
-    )
+    ensure_namespace_exists(namespace)
+    apply_external_nodes(namespace, name, nodes)
+    patch_secret_bootstrap_host(namespace, secret_name, nodes)
+    apply_configmap(namespace, router_name, name, nodes)
+    apply_router_service(namespace, router_name, name)
+    apply_deployment(namespace, router_name, name, secret_name, image, replicas, nodes)
     logger.info(
         "Reconciled %s into namespace %s with %d external InnoDB nodes.",
         reason,
-        router_namespace,
+        namespace,
         len(nodes),
     )
 
@@ -516,9 +509,9 @@ def configure(settings: kopf.OperatorSettings, **_: Any) -> None:
     settings.posting.level = 20
 
 
-@kopf.on.resume("mysql.oracle.com", "v1alpha1", "mysqlrouters", namespace=NAMESPACE)
-@kopf.on.create("mysql.oracle.com", "v1alpha1", "mysqlrouters", namespace=NAMESPACE)
-@kopf.on.update("mysql.oracle.com", "v1alpha1", "mysqlrouters", namespace=NAMESPACE)
+@kopf.on.resume("mysql.oracle.com", "v1alpha1", "mysqlrouters")
+@kopf.on.create("mysql.oracle.com", "v1alpha1", "mysqlrouters")
+@kopf.on.update("mysql.oracle.com", "v1alpha1", "mysqlrouters")
 def mysql_router_changed(
     namespace: str,
     name: str,
@@ -529,7 +522,7 @@ def mysql_router_changed(
     reconcile(namespace, name, spec, logger)
 
 
-@kopf.on.delete("mysql.oracle.com", "v1alpha1", "mysqlrouters", namespace=NAMESPACE)
+@kopf.on.delete("mysql.oracle.com", "v1alpha1", "mysqlrouters")
 def mysql_router_deleted(
     namespace: str,
     name: str,
@@ -537,18 +530,11 @@ def mysql_router_deleted(
     logger: Any,
     **_: Any,
 ) -> None:
-    cleanup_owned_resources(target_namespace(namespace, spec), name, spec)
+    cleanup_owned_resources(namespace, name, spec)
     logger.info("Removed resources owned by MySQLRouter/%s.", name)
 
 
-@kopf.timer(
-    "mysql.oracle.com",
-    "v1alpha1",
-    "mysqlrouters",
-    namespace=NAMESPACE,
-    interval=300.0,
-    sharp=True,
-)
+@kopf.timer("mysql.oracle.com", "v1alpha1", "mysqlrouters", interval=300.0, sharp=True)
 def periodic_reconcile(
     namespace: str,
     name: str,
