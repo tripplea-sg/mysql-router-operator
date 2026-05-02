@@ -8,11 +8,13 @@ metadata:
   namespace: mysql-router
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   name: mysql-router-operator
-  namespace: mysql-router
 rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get"]
   - apiGroups: [""]
     resources: ["services", "endpoints", "configmaps", "secrets", "events"]
     verbs: ["get", "list", "watch", "create", "patch", "update", "delete"]
@@ -33,15 +35,14 @@ rules:
     verbs: ["get", "patch", "update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: mysql-router-operator
-  namespace: mysql-router
 subjects:
   - kind: ServiceAccount
     name: mysql-router-operator
     namespace: mysql-router
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
+  kind: ClusterRole
   name: mysql-router-operator

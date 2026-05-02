@@ -27,6 +27,8 @@ spec:
               type: object
               required: ["innodbCluster"]
               properties:
+                targetNamespace:
+                  type: string
                 router:
                   type: object
                   properties:
