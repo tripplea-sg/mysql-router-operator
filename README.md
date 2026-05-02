@@ -121,7 +121,7 @@ Then create the secret and `MySQLRouter` resource as described below.
 ## 2. Create the Bootstrap Secret
 
 MySQL Router needs a MySQL account that can bootstrap against the external
-InnoDB Cluster with the following manifest:
+InnoDB Cluster with the following manifest (`secret.yaml`):
 
 ```yaml
 apiVersion: v1
@@ -151,7 +151,7 @@ stringData:
   MYSQL_BOOTSTRAP_PORT: "3306"
 ```
 
-You can create it from YAML (assuming file name is secret.yaml):
+You can create it from YAML:
 
 ```sh
 kubectl apply -f secret.yaml
@@ -174,7 +174,27 @@ placeholder.
 
 ## 3. Deploy MySQL Router
 
-Define the external InnoDB Cluster nodes in `deploy/mysqlrouter.yaml`:
+Define the external InnoDB Cluster nodes in `mysqlrouter.yaml` using the following template:
+
+```yaml
+apiVersion: mysql.oracle.com/v1alpha1
+kind: MySQLRouter
+metadata:
+  name: <name_of_the_mysql_router_deployment>
+  namespace: <namespace_for_running_mysql_router>
+spec:
+  router:
+    serviceName: mysql-router
+    bootstrapSecret: mysql-router-bootstrap
+    image: container-registry.oracle.com/mysql/community-router:9.7
+  innodbCluster:
+    name: <innodb_cluster_node_hostname_pattern>
+    nodeServicePrefix: <innodb_cluster_node_hostname_pattern>
+    nodes:
+      - ip: <ip_address_of_innodb_cluster_node>
+        port: <mysql_port>
+```
+Example:
 
 ```yaml
 apiVersion: mysql.oracle.com/v1alpha1
