@@ -110,10 +110,10 @@ The Kustomize deployment includes:
 For a production-style rollout, you can apply the pieces in phases:
 
 ```sh
-kubectl apply -f deploy/namespace.yaml
-kubectl apply -f deploy/mysqlrouter-crd.yaml
-kubectl apply -f deploy/operator-rbac.yaml
-kubectl apply -f deploy/operator-deployment.yaml
+kubectl apply -f https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/namespace.yaml
+kubectl apply -f https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/mysqlrouter-crd.yaml
+kubectl apply -f https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/operator-rbac.yaml
+kubectl apply -f https://github.com/tripplea-sg/mysql-router-operator/blob/main/deploy/operator-deployment.yaml
 ```
 
 Then create the secret and `MySQLRouter` resource as described below.
