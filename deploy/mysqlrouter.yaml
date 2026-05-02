@@ -1,0 +1,20 @@
+apiVersion: mysql.oracle.com/v1alpha1
+kind: MySQLRouter
+metadata:
+  name: mysql-router
+  namespace: mysql-router
+spec:
+  router:
+    serviceName: mysql-router
+    bootstrapSecret: mysql-router-bootstrap
+    image: container-registry.oracle.com/mysql/community-router:9.7
+  innodbCluster:
+    name: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq
+    nodeServicePrefix: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq
+    nodes:
+      - ip: 10.0.10.76
+        port: 3306
+      - ip: 10.0.10.68
+        port: 3306
+      - ip: 10.0.10.63
+        port: 3306

@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-router-operator
+  namespace: mysql-router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-router-operator
+  template:
+    metadata:
+      labels:
+        app: mysql-router-operator
+    spec:
+      serviceAccountName: mysql-router-operator
+      containers:
+        - name: operator
+          image: python:3.12-slim
+          imagePullPolicy: IfNotPresent
+          workingDir: /operator
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              pip install --no-cache-dir -r /operator/requirements.txt
+              exec kopf run /operator/operator.py --verbose
+          env:
+            - name: ROUTER_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: ROUTER_NAME
+              value: mysql-router
+            - name: BOOTSTRAP_SECRET
+              value: mysql-router-bootstrap
+            - name: CLUSTER_LABEL
+              value: mysql.oracle.com/innodb-cluster
+          volumeMounts:
+            - name: operator-code
+              mountPath: /operator
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: operator-code
+          configMap:
+            name: mysql-router-operator-code
