@@ -121,8 +121,22 @@ Then create the secret and `MySQLRouter` resource as described below.
 ## 2. Create the Bootstrap Secret
 
 MySQL Router needs a MySQL account that can bootstrap against the external
-InnoDB Cluster. The included `deploy/secret.yaml` creates:
+InnoDB Cluster with the following manifest:
 
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-router-bootstrap
+  namespace: <your-namespace>
+type: Opaque
+stringData:
+  MYSQL_BOOTSTRAP_USER: <innodb_cluster_admin_user>
+  MYSQL_BOOTSTRAP_PASSWORD: <innodb_cluster_admin_password>
+  MYSQL_BOOTSTRAP_HOST: placeholder
+  MYSQL_BOOTSTRAP_PORT: "<mysql_port>"
+```
+Example:
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -137,11 +151,10 @@ stringData:
   MYSQL_BOOTSTRAP_PORT: "3306"
 ```
 
-You can create it from YAML:
+You can create it from YAML (assuming file name is secret.yaml):
 
 ```sh
-kubectl apply -f deploy/namespace.yaml
-kubectl apply -f deploy/secret.yaml
+kubectl apply -f secret.yaml
 ```
 
 Or imperatively:
