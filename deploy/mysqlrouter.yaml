@@ -7,7 +7,6 @@ metadata:
   name: mysql-router
   namespace: mysql-router
 spec:
-  targetNamespace: mysql-router
   router:
     serviceName: mysql-router
     bootstrapSecret: mysql-router-bootstrap

@@ -19,8 +19,8 @@ spec:
       serviceAccountName: mysql-router-operator
       containers:
         - name: operator
-          image: ghcr.io/tripplea-sg/mysql-router-operator:0.1.4
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/tripplea-sg/mysql-router-operator:0.1.5
+          imagePullPolicy: Always
           env:
             - name: ROUTER_NAMESPACE
               valueFrom:
