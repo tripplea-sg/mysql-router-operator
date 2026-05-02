@@ -18,9 +18,21 @@ kind: MySQLRouter
 spec:
   innodbCluster:
     nodes:
+      - ip: <innodb_cluster_node_ip>
+        port: <mysql_port>
+```
+Example:
+```yaml
+apiVersion: mysql.oracle.com/v1alpha1
+kind: MySQLRouter
+spec:
+  innodbCluster:
+    nodes:
       - ip: 10.0.10.76
         port: 3306
       - ip: 10.0.10.68
+        port: 3306
+      - ip: 10.0.10.63
         port: 3306
 ```
 
