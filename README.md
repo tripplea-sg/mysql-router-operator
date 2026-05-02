@@ -9,12 +9,17 @@ Kubernetes for an InnoDB Cluster running outside Kubernetes.
 
 ## What It Watches
 
-The operator runs in the `mysql-router` namespace and watches `MySQLRouter`
-custom resources:
+The sample manifests deploy the operator in the mysql-router namespace, but
+the operator watches MySQLRouter custom resources in every namespace.
+
+The namespace of the MySQLRouter custom resource is the namespace where MySQL
+Router is deployed:
 
 ```yaml
 apiVersion: mysql.oracle.com/v1alpha1
 kind: MySQLRouter
+metadata:
+  namespace: <mysql_router_namespace>
 spec:
   innodbCluster:
     nodes:
@@ -25,6 +30,8 @@ Example:
 ```yaml
 apiVersion: mysql.oracle.com/v1alpha1
 kind: MySQLRouter
+metadata:
+  namespace: mysql-router
 spec:
   innodbCluster:
     nodes:
