@@ -241,7 +241,7 @@ kubectl get svc,endpoints,deploy,pods -n mysql-router
 
 ## 4. Adapt to InnoDB Cluster Scaling
 
-To change the external InnoDB Cluster nodes, edit `deploy/mysqlrouter.yaml` and apply
+To change the external InnoDB Cluster nodes, edit `mysqlrouter.yaml` and apply
 again. For example, when scaling from 3 external nodes to 5:
 
 ```yaml
@@ -263,7 +263,7 @@ spec:
 Then apply:
 
 ```sh
-kubectl apply -f deploy/mysqlrouter.yaml
+kubectl apply -f mysqlrouter.yaml
 ```
 
 On reconcile, the operator:
