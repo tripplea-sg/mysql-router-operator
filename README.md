@@ -185,7 +185,7 @@ metadata:
 spec:
   router:
     serviceName: mysql-router
-    bootstrapSecret: mysql-router-bootstrap
+    bootstrapSecret: <secret_name>
     image: container-registry.oracle.com/mysql/community-router:9.7
   innodbCluster:
     name: <innodb_cluster_node_hostname_pattern>
