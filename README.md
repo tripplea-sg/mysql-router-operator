@@ -222,8 +222,7 @@ spec:
 Apply it:
 
 ```sh
-kubectl apply -f deploy/namespace.yaml
-kubectl apply -f deploy/mysqlrouter.yaml
+kubectl apply -f mysqlrouter.yaml
 ```
 
 The operator creates:
