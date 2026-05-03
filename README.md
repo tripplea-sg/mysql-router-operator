@@ -370,3 +370,79 @@ kubectl get svc,endpoints -n mysql-router
 kubectl logs -n mysql-router deploy/mysql-router
 kubectl describe pod -n mysql-router -l app=mysql-router
 ```
+
+## 6. Housekeeping and Uninstall
+
+Delete all `MySQLRouter` custom resources first, so the operator can clean up
+generated router resources:
+
+```sh
+kubectl delete mysqlrouter --all -A --ignore-not-found
+```
+
+Delete any generated router resources that remain in `mysql-router`:
+
+```sh
+kubectl delete deploy mysql-router -n mysql-router --ignore-not-found
+kubectl delete svc mysql-router -n mysql-router --ignore-not-found
+kubectl delete cm mysql-router-config -n mysql-router --ignore-not-found
+kubectl delete svc -n mysql-router -l mysql.oracle.com/router-node=external-innodb --ignore-not-found
+kubectl delete endpoints -n mysql-router -l mysql.oracle.com/router-node=external-innodb --ignore-not-found
+```
+
+Delete the operator:
+
+```sh
+kubectl delete deploy mysql-router-operator -n mysql-router --ignore-not-found
+kubectl delete serviceaccount mysql-router-operator -n mysql-router --ignore-not-found
+kubectl delete clusterrolebinding mysql-router-operator --ignore-not-found
+kubectl delete clusterrole mysql-router-operator --ignore-not-found
+```
+
+Delete the CRD:
+
+```sh
+kubectl delete crd mysqlrouters.mysql.oracle.com --ignore-not-found
+```
+
+Delete the bootstrap secret and namespace:
+
+```sh
+kubectl delete secret mysql-router-bootstrap -n mysql-router --ignore-not-found
+kubectl delete ns mysql-router --ignore-not-found
+```
+
+If a `MySQLRouter` resource is stuck because of a finalizer, remove it:
+
+```sh
+kubectl patch mysqlrouter <name> -n <namespace> \
+  --type=json \
+  -p='[{"op":"remove","path":"/metadata/finalizers"}]'
+```
+
+If the namespace is stuck in `Terminating`, inspect it:
+
+```sh
+kubectl get ns mysql-router -o yaml
+```
+
+As a last resort, force-finalize the namespace:
+
+```sh
+kubectl get ns mysql-router -o json > ns.json
+```
+
+Edit `ns.json` so `spec.finalizers` is empty:
+
+```json
+"spec": {
+  "finalizers": []
+}
+```
+
+Then run:
+
+```sh
+kubectl replace --raw "/api/v1/namespaces/mysql-router/finalize" -f ns.json
+```
+
