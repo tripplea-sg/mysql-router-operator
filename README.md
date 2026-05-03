@@ -77,7 +77,7 @@ When at least one node endpoint is available, the operator reconciles:
 The operator image is pulled from the public GHCR repository:
 
 ```text
-ghcr.io/tripplea-sg/mysql-router-operator:0.1.8
+ghcr.io/tripplea-sg/mysql-router-operator:0.1.9
 ```
 
 OKE/Kubernetes can pull this public image without imagePullSecrets.
