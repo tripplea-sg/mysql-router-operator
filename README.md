@@ -23,7 +23,8 @@ metadata:
 spec:
   innodbCluster:
     nodes:
-      - ip: <innodb_cluster_node_ip>
+      - hostname: <innodb_cluster_node_hostname>
+        ip: <innodb_cluster_node_ip>
         port: <mysql_port>
 ```
 Example:
@@ -35,16 +36,20 @@ metadata:
 spec:
   innodbCluster:
     nodes:
-      - ip: 10.0.10.76
+      - hostname: sun
+        ip: 10.0.10.76
         port: 3306
-      - ip: 10.0.10.68
+      - hostname: earth
+        ip: 10.0.10.68
         port: 3306
-      - ip: 10.0.10.63
+      - hostname: moon
+        ip: 10.0.10.63
         port: 3306
 ```
 
-The operator creates the per-node headless `Service` and `Endpoints` objects
-automatically. Manual per-node YAML files are no longer required.
+The operator creates the per-node headless Service and Endpoints objects in
+the same namespace automatically. Manual per-node YAML files are no longer
+required.
 
 ## What It Creates
 
@@ -72,7 +77,7 @@ When at least one node endpoint is available, the operator reconciles:
 The operator image is pulled from the public GHCR repository:
 
 ```text
-ghcr.io/tripplea-sg/mysql-router-operator:0.1.0
+ghcr.io/tripplea-sg/mysql-router-operator:0.1.6
 ```
 
 OKE/Kubernetes can pull this public image without imagePullSecrets.
