@@ -225,7 +225,7 @@ spec:
     image: container-registry.oracle.com/mysql/community-router:9.7
   innodbCluster:
     nodes:
-      hostname: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq-0
+      - hostname: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq-0
         ip: 10.0.10.76
         port: 3306
       - hostname: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq-1
