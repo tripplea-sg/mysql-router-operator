@@ -199,14 +199,14 @@ metadata:
   namespace: <namespace_for_running_mysql_router>
 spec:
   router:
+    replica: <number_of_mysql_router>
     serviceName: mysql-router
     bootstrapSecret: <secret_name>
     image: container-registry.oracle.com/mysql/community-router:9.7
   innodbCluster:
-    name: <innodb_cluster_node_hostname_pattern>
-    nodeServicePrefix: <innodb_cluster_node_hostname_pattern>
     nodes:
-      - ip: <ip_address_of_innodb_cluster_node>
+      - hostname: <hostname_of_innodb_cluster_node>
+        ip: <ip_address_of_innodb_cluster_node>
         port: <mysql_port>
 ```
 Example:
@@ -219,18 +219,20 @@ metadata:
   namespace: mysql-router
 spec:
   router:
+    replica: 3
     serviceName: mysql-router
     bootstrapSecret: mysql-router-bootstrap
     image: container-registry.oracle.com/mysql/community-router:9.7
   innodbCluster:
-    name: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq
-    nodeServicePrefix: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq
     nodes:
-      - ip: 10.0.10.76
+      hostname: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq-0
+        ip: 10.0.10.76
         port: 3306
-      - ip: 10.0.10.68
+      - hostname: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq-1
+        ip: 10.0.10.68
         port: 3306
-      - ip: 10.0.10.63
+      - hostname: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq-2
+        ip: 10.0.10.63
         port: 3306
 ```
 
