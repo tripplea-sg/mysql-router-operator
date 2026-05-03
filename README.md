@@ -199,7 +199,7 @@ metadata:
   namespace: <namespace_for_running_mysql_router>
 spec:
   router:
-    replica: <number_of_mysql_router>
+    replicas: <number_of_mysql_router>
     serviceName: mysql-router
     bootstrapSecret: <secret_name>
     image: container-registry.oracle.com/mysql/community-router:9.7
@@ -219,7 +219,7 @@ metadata:
   namespace: mysql-router
 spec:
   router:
-    replica: 3
+    replicas: 3
     serviceName: mysql-router
     bootstrapSecret: mysql-router-bootstrap
     image: container-registry.oracle.com/mysql/community-router:9.7
