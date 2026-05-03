@@ -299,3 +299,69 @@ spec:
   router:
     replicas: 3
 ```
+## 5. Test MySQL Router
+
+I'm using namespace `mysql-router` for running my routers. Check that the router pods are running and replace namespace name into your namespace name used to run routers:
+
+```sh
+kubectl get pods -n mysql-router -l app=mysql-router -o wide
+kubectl logs -n mysql-router deploy/mysql-router
+```
+
+Check generated services and endpoints:
+
+```sh
+kubectl get svc,endpoints -n mysql-router
+```
+
+Create a temporary MySQL client pod:
+
+```sh
+kubectl run mysql-client \
+  -n mysql-router \
+  --image=container-registry.oracle.com/mysql/community-server:9.7 \
+  --restart=Never \
+  --command -- sleep 3600
+```
+
+Connect through the read-write router port:
+
+```sh
+kubectl exec -it mysql-client -n mysql-router -- \
+  mysql -h mysql-router.mysql-router.svc.cluster.local -P 6446 -u gradmin -p
+```
+
+Run:
+
+```sql
+SELECT @@hostname, @@port, @@read_only, @@super_read_only;
+```
+
+Connect through the read-only router port:
+
+```sh
+kubectl exec -it mysql-client -n mysql-router -- \
+  mysql -h mysql-router.mysql-router.svc.cluster.local -P 6447 -u gradmin -p
+```
+
+If MySQL login fails, run a TCP connectivity check:
+
+```sh
+kubectl exec -it mysql-client -n mysql-router -- \
+  bash -lc 'timeout 5 bash -c "</dev/tcp/mysql-router.mysql-router.svc.cluster.local/6446" && echo OK'
+```
+
+Clean up the test pod:
+
+```sh
+kubectl delete pod mysql-client -n mysql-router
+```
+
+If testing fails, collect diagnostics:
+
+```sh
+kubectl get pods -n mysql-router -o wide
+kubectl get svc,endpoints -n mysql-router
+kubectl logs -n mysql-router deploy/mysql-router
+kubectl describe pod -n mysql-router -l app=mysql-router
+```
