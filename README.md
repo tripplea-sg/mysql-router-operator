@@ -265,15 +265,20 @@ again. For example, when scaling from 3 external nodes to 5:
 spec:
   innodbCluster:
     nodes:
-      - ip: 10.0.10.76
+      - hostname: mysql-0.example.com
+        ip: 10.0.10.76
         port: 3306
-      - ip: 10.0.10.68
+      - hostname: mysql-1.example.com
+        ip: 10.0.10.68
         port: 3306
-      - ip: 10.0.10.63
+      - hostname: mysql-2.example.com
+        ip: 10.0.10.63
         port: 3306
-      - ip: 10.0.10.81
+      - hostname: mysql-3.example.com
+        ip: 10.0.10.81
         port: 3306
-      - ip: 10.0.10.82
+      - hostname: mysql-4.example.com
+        ip: 10.0.10.82
         port: 3306
 ```
 
