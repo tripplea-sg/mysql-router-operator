@@ -19,7 +19,7 @@ spec:
       serviceAccountName: mysql-router-operator
       containers:
         - name: operator
-          image: ghcr.io/tripplea-sg/mysql-router-operator:0.1.5
+          image: ghcr.io/tripplea-sg/mysql-router-operator:0.1.6
           imagePullPolicy: Always
           env:
             - name: ROUTER_NAMESPACE
@@ -30,8 +30,6 @@ spec:
               value: mysql-router
             - name: BOOTSTRAP_SECRET
               value: mysql-router-bootstrap
-            - name: CLUSTER_LABEL
-              value: mysql.oracle.com/innodb-cluster
           resources:
             requests:
               cpu: 50m

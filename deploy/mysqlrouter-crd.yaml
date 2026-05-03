@@ -45,17 +45,15 @@ spec:
                   type: object
                   required: ["nodes"]
                   properties:
-                    name:
-                      type: string
-                    nodeServicePrefix:
-                      type: string
                     nodes:
                       type: array
                       minItems: 1
                       items:
                         type: object
-                        required: ["ip"]
+                        required: ["hostname", "ip"]
                         properties:
+                          hostname:
+                            type: string
                           ip:
                             type: string
                           port:

@@ -12,12 +12,13 @@ spec:
     bootstrapSecret: mysql-router-bootstrap
     image: container-registry.oracle.com/mysql/community-router:9.7
   innodbCluster:
-    name: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq
-    nodeServicePrefix: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq
     nodes:
-      - ip: 10.0.10.76
+      - hostname: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq-0
+        ip: 10.0.10.76
         port: 3306
-      - ip: 10.0.10.68
+      - hostname: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq-1
+        ip: 10.0.10.68
         port: 3306
-      - ip: 10.0.10.63
+      - hostname: oke-cawnvg2rvuq-nzkjuhaz6jq-snvjd2jtcoq-2
+        ip: 10.0.10.63
         port: 3306
