@@ -142,7 +142,7 @@ def apply_external_node_endpoints(namespace: str, node: Dict[str, Any]) -> None:
         subsets=[
             client.V1EndpointSubset(
                 addresses=[client.V1EndpointAddress(ip=node["ip"])],
-                ports=[client.V1EndpointPort(name="mysql", port=node["port"])],
+                ports=[client.CoreV1EndpointPort(name="mysql", port=node["port"])],
             )
         ],
     )
@@ -181,13 +181,22 @@ def cleanup_owned_resources(namespace: str, owner_name: str, spec: Dict[str, Any
     router_name, _, _, _ = router_settings(namespace, owner_name, spec)
     selector = f"{OWNER_LABEL}={owner_name}"
 
-    for ep in corev1().list_namespaced_endpoints(namespace, label_selector=selector).items:
+    try:
+        endpoints = corev1().list_namespaced_endpoints(namespace, label_selector=selector).items
+        services = corev1().list_namespaced_service(namespace, label_selector=selector).items
+        configmaps = corev1().list_namespaced_config_map(namespace, label_selector=selector).items
+    except ApiException as exc:
+        if exc.status == 404:
+            return
+        raise
+
+    for ep in endpoints:
         delete_if_exists(corev1().delete_namespaced_endpoints, ep.metadata.name, namespace)
 
-    for svc in corev1().list_namespaced_service(namespace, label_selector=selector).items:
+    for svc in services:
         delete_if_exists(corev1().delete_namespaced_service, svc.metadata.name, namespace)
 
-    for cm in corev1().list_namespaced_config_map(namespace, label_selector=selector).items:
+    for cm in configmaps:
         delete_if_exists(corev1().delete_namespaced_config_map, cm.metadata.name, namespace)
 
     delete_if_exists(appsv1().delete_namespaced_deployment, router_name, namespace)
