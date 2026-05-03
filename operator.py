@@ -8,6 +8,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 from typing import Any, Dict, List, Tuple
 
 import kopf
@@ -18,7 +19,6 @@ from kubernetes.client import ApiException
 NAMESPACE = os.getenv("ROUTER_NAMESPACE", "mysql-router")
 ROUTER_NAME = os.getenv("ROUTER_NAME", "mysql-router")
 BOOTSTRAP_SECRET = os.getenv("BOOTSTRAP_SECRET", "mysql-router-bootstrap")
-CLUSTER_LABEL = os.getenv("CLUSTER_LABEL", "mysql.oracle.com/innodb-cluster")
 OWNER_LABEL = "mysql.oracle.com/router-owner"
 NODE_ROLE_LABEL = "mysql.oracle.com/router-node"
 ROUTER_LABELS = {"app.kubernetes.io/managed-by": "kopf"}
@@ -47,26 +47,27 @@ def resource_checksum(payload: Dict[str, Any]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def router_settings(
-    namespace: str, name: str, spec: Dict[str, Any]
-) -> Tuple[str, str, str, str, int, str]:
+def router_settings(namespace: str, name: str, spec: Dict[str, Any]) -> Tuple[str, str, str, int]:
     router = spec.get("router") or {}
     cluster = spec.get("innodbCluster") or {}
     router_name = router.get("serviceName") or router.get("name") or ROUTER_NAME or name
     secret_name = router.get("bootstrapSecret") or BOOTSTRAP_SECRET
     image = router.get("image") or ROUTER_IMAGE
-    cluster_name = cluster.get("name") or name
     replicas = int(router.get("replicas") or len(cluster.get("nodes") or []) or 1)
-    node_prefix = cluster.get("nodeServicePrefix") or f"{router_name}-node"
-    return router_name, secret_name, image, cluster_name, replicas, node_prefix
+    return router_name, secret_name, image, replicas
+
+
+def dns_safe_name(value: str, fallback: str) -> str:
+    normalized = re.sub(r"[^a-z0-9-]+", "-", value.lower()).strip("-")
+    normalized = re.sub(r"-+", "-", normalized)
+    normalized = normalized[:63].strip("-")
+    return normalized or fallback
 
 
 def desired_nodes(
     namespace: str,
     owner_name: str,
     spec: Dict[str, Any],
-    cluster_name: str,
-    node_prefix: str,
 ) -> List[Dict[str, Any]]:
     raw_nodes = (spec.get("innodbCluster") or {}).get("nodes") or []
     nodes: List[Dict[str, Any]] = []
@@ -74,26 +75,34 @@ def desired_nodes(
     for index, raw_node in enumerate(raw_nodes):
         if not raw_node.get("ip"):
             raise kopf.PermanentError(f"spec.innodbCluster.nodes[{index}].ip is required")
+        if not raw_node.get("hostname"):
+            raise kopf.PermanentError(
+                f"spec.innodbCluster.nodes[{index}].hostname is required"
+            )
 
-        service_name = raw_node.get("serviceName") or raw_node.get("name") or f"{node_prefix}-{index}"
+        service_name = (
+            raw_node.get("serviceName")
+            or raw_node.get("name")
+            or dns_safe_name(raw_node["hostname"], f"{owner_name}-node-{index}")
+        )
         port = int(raw_node.get("port") or 3306)
         nodes.append(
             {
                 "name": service_name,
+                "hostname": raw_node["hostname"],
                 "ip": raw_node["ip"],
                 "host": f"{service_name}.{namespace}.svc.cluster.local",
                 "port": port,
-                "labels": node_labels(owner_name, cluster_name),
+                "labels": node_labels(owner_name),
             }
         )
 
     return nodes
 
 
-def node_labels(owner_name: str, cluster_name: str) -> Dict[str, str]:
+def node_labels(owner_name: str) -> Dict[str, str]:
     return {
         **ROUTER_LABELS,
-        CLUSTER_LABEL: cluster_name,
         OWNER_LABEL: owner_name,
         NODE_ROLE_LABEL: "external-innodb",
     }
@@ -169,7 +178,7 @@ def delete_if_exists(api_call: Any, name: str, namespace: str) -> None:
 
 
 def cleanup_owned_resources(namespace: str, owner_name: str, spec: Dict[str, Any]) -> None:
-    router_name, _, _, _, _, _ = router_settings(namespace, owner_name, spec)
+    router_name, _, _, _ = router_settings(namespace, owner_name, spec)
     selector = f"{OWNER_LABEL}={owner_name}"
 
     for ep in corev1().list_namespaced_endpoints(namespace, label_selector=selector).items:
@@ -482,10 +491,8 @@ def reconcile(
     logger: Any,
     reason: str = "custom resource",
 ) -> None:
-    router_name, secret_name, image, cluster_name, replicas, node_prefix = router_settings(
-        namespace, name, spec
-    )
-    nodes = desired_nodes(namespace, name, spec, cluster_name, node_prefix)
+    router_name, secret_name, image, replicas = router_settings(namespace, name, spec)
+    nodes = desired_nodes(namespace, name, spec)
     if not nodes:
         raise kopf.PermanentError("spec.innodbCluster.nodes must contain at least one node")
 
